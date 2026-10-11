@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="검정 공간에서 팔찌 영상이 느리게 떠다닙니다. 원본 컬러 영상, 레이블, 번역 규칙, 휠 왕복 탐색.">
+  <title>Bracelet — Black / Space</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css?v=scene-hotspots-6">
+  <script defer src="script.js?v=scene-hotspots-6"></script>
+</head>
+<body>
+  <main id="space" aria-label="팔찌 영상 공간">
+    <canvas id="scene" tabindex="0" aria-label="검정 공간에 떠 있는 팔찌 영상. 빈 공간을 드래그해 둘러보고, 팔찌에 마우스를 올린 채 휠을 굴려 영상을 탐색하세요." aria-describedby="keyboard-help">
+      Canvas를 지원하는 브라우저에서 열어주세요.
+    </canvas>
+    <!-- EDIT 08 — 팔찌 주위 레이블·이동 화살표 레이어. 내용은 script.js의 ASSETS(labels/handle)에서 만듭니다. -->
+    <div id="overlay" class="overlay"></div>
+
+    <!-- EDIT 10 — KNOTATION 글자 상자. 내용은 script.js의 CONFIG.markText에서 만듭니다. -->
+    <div id="mark" class="mark" role="img" aria-label="KNOTATION"></div>
+
+    <!-- EDIT 09 — TRANSLATION RULES. 누르면 아래 본문이 펼쳐집니다. 본문은 조선신명조, 소제목은 TT Marxiana,
+         본문 속 영문·숫자는 script.js가 자동으로 TT Marxiana Italic으로 감쌉니다. -->
+    <section id="rules" class="rules" aria-label="Translation rules">
+      <button id="rules-handle" class="rules__handle" type="button" aria-label="상자 이동" title="끌어서 옮기기"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 0l3.5 3.8h-7L10 0zM10 20l3.5-3.8h-7L10 20zM0 10l3.8 3.5v-7L0 10zM20 10l-3.8 3.5v-7L20 10zM3 9h14v2H3V9zM9 3h2v14H9V3z"/></svg></button>
+      <button id="rules-toggle" class="rules__toggle" type="button" aria-expanded="false" aria-controls="rules-body">TRANSLATION RULES</button>
+      <div id="rules-body" class="rules__body">
+        <p class="rules__intro">영화 속 두 인물의 관계를 시간에 따라 분석하고, 관계의 상태와 매개물의 이동을 각각 선, 기호, 매듭, 비즈의 구조로 변환한다.</p>
+
+        <h3>TWO LINES</h3>
+        <p>두 개의 연속된 선은 영화 속 두 인물의 지속적인 존재를 나타낸다. 안쪽 원선은 인물 A, 바깥쪽 원선은 인물 B에 대응하며, 서로 다른 색상으로 두 인물을 구별한다.</p>
+
+        <h3>RELATIONSHIP STATES</h3>
+        <p>각 장면에서 두 인물이 서로에게 보이는 태도와 관계의 변화를 분석한다. 이를 다가감, 호응, 엇갈림, 긴장, 머무름, 거리두기, 탐색, 망설임, 충돌, 단절 등의 상태로 분류한다.</p>
+        <p>각각의 상태는 두 원선 사이에서 발생하는 곡선의 방향, 연결, 교차, 반복, 분리 등의 기호로 변환된다. 예를 들어 다가감은 한쪽 선이 상대를 향해 뻗는 형태로, 호응은 두 선이 중앙에서 이어지는 형태로, 엇갈림은 두 선이 서로를 향하지만 만나지 않는 형태로 표현한다. 단절은 이전에 이어지던 선의 연결이 끊어지는 방식으로 기록한다. 이러한 기호는 특정 행동을 그대로 묘사하기보다, 그 장면에서 두 인물의 관계를 어떻게 읽었는가를 시각적으로 나타낸다.</p>
+
+        <h3>KNOTS</h3>
+        <p>관계를 나타내는 기호는 감기, 꼬기, 교차하기, 매듭짓기 등 팔찌를 만드는 행위로 연결된다.</p>
+        <p>두 가닥이 어떤 방향으로 움직이고, 어디에서 만나거나 분리되는지에 따라 서로 다른 구조가 만들어진다. 따라서 매듭은 두 인물 사이에서 발생한 관계의 흔적이 된다.</p>
+
+        <h3>BEADS</h3>
+        <p>비즈는 영화 속 두 인물 사이에 등장하는 편지, 사진, 열쇠 등의 물건이나 매개체를 나타낸다.</p>
+        <p class="rules__indent">A가 물건을 가지고 있다면 A의 가닥에 비즈를 배치한다.<br>B가 가지고 있다면 B의 가닥에 비즈를 배치한다.<br>두 인물이 같은 물건을 공유한다면 두 가닥이 하나의 비즈를 함께 통과한다.<br>A가 B에게 물건을 건넨다면, 시간의 흐름에 따라 비즈의 위치가 A의 가닥에서 B의 가닥으로 바뀐다.</p>
+        <p>이를 통해 비즈는 물건을 상징하는 데 그치지 않고, 영화 속 매개물이 두 인물 사이에서 이동하고 공유되는 구조를 보여준다.</p>
+
+        <h3>TIME</h3>
+        <p>영화의 전체 러닝타임을 원 한 바퀴인 360°로 환산한다. 12시 방향에서 시작해 시계 방향으로 시간이 진행되며, 관계의 변화가 발생하는 시점을 각도로 변환해 해당 위치에 기호를 배치한다.</p>
+        <p>이렇게 기록된 원형 악보는 영화 속 관계의 시간과 구조를 시각화하며, 이후 팔찌를 제작하는 기준이 된다.</p>
+      </div>
+    </section>
+
+    <!-- EDIT 01 — 제목과 안내 문구. 팔찌에는 카드나 배경 사각형을 붙이지 않습니다. -->
+    <header class="masthead">
+      <div class="identity">
+        <span class="identity__title">BRACELET / SPACE</span>
+        <span class="identity__subtitle">두 가닥 사이에 놓인 시간</span>
+      </div>
+      <div class="utility">
+        <span id="source-count" class="source-count">02 SOURCES / 02 POSITIONS</span>
+        <div class="utility__buttons">
+          <button id="grid-toggle" class="text-button" type="button" aria-pressed="false">GRID OFF</button>
+          <button id="float-toggle" class="text-button" type="button" aria-pressed="true">FLOAT ON</button>
+          <button id="reset-view" class="text-button" type="button" title="시점 초기화 (R)">RESET VIEW <span aria-hidden="true">↺</span></button>
+        </div>
+      </div>
+    </header>
+
+    <footer class="footer">
+      <div class="instructions">
+        <p class="instructions__primary" id="main-hint">팔찌 위에서 휠을 굴려보세요.</p>
+        <p class="instructions__secondary"><span class="desktop-hint">휠 · 빠른 회전 / ✥ · 옮기기</span><span class="touch-hint">팔찌 위 드래그 · 영상 / ✥ · 옮기기</span></p>
+      </div>
+      <div class="footer__right">
+        <span id="media-state" class="media-state" role="status">LOADING VIDEO</span>
+        <button id="open-file" class="text-button" type="button" title="내 컴퓨터의 영상만 읽습니다. 외부 업로드 없음.">영상 불러오기 <span aria-hidden="true">↗</span></button>
+        <button id="help-button" class="help-button" type="button" aria-expanded="false" aria-controls="help-panel" aria-label="사용 방법">?</button>
+      </div>
+    </footer>
+
+    <div id="hover-label" class="hover-label" aria-hidden="true" hidden>
+      <div class="hover-label__top"><span id="hover-name">01 / BRACELET</span><span id="hover-direction">PAUSED</span></div>
+      <div class="hover-label__bottom"><span id="hover-time">00:00.00</span><span id="hover-speed">SCROLL ↕</span></div>
+      <div class="hover-progress"><i id="hover-progress-fill"></i></div>
+    </div>
+
+    <aside id="asset-notice" class="asset-notice" aria-live="polite" hidden>
+      <button id="dismiss-notice" class="notice-close" type="button" aria-label="안내 닫기">×</button>
+      <span class="eyebrow">VIDEO SETUP</span>
+      <p id="notice-message">영상의 첫 프레임을 아직 불러오지 못했습니다.<br><code>assets/bracelet1.mp4</code>를 넣거나<br>아래에서 영상을 선택해주세요.</p>
+      <button id="notice-open-file" class="text-button" type="button">내 영상으로 미리 보기 ↗</button>
+    </aside>
+
+    <section id="help-panel" class="help-panel" aria-labelledby="help-title" hidden>
+      <div class="help-heading"><h2 id="help-title">How to move</h2><button id="close-help" class="text-button" type="button" aria-label="사용 방법 닫기">닫기 ×</button></div>
+      <dl>
+        <div><dt>처음 화면</dt><dd>별도 PNG 없이 MP4의 첫 프레임을 표시합니다. 영상이 없으면 공간과 그리드만 보입니다.</dd></div>
+        <div><dt>원본 컬러</dt><dd>흑백·무지개·호버 색상 필터는 없습니다. 검정 배경 위에 영상을 그대로 올리므로 픽셀 처리 없이 원본과 같은 색으로 보입니다.</dd></div>
+        <div><dt>팔찌 + 휠</dt><dd>올려둔 팔찌만 빠르게 움직입니다. 끝에서는 되감기며 왕복합니다. 휠을 멈추면 마지막으로 보인 프레임을 유지합니다.</dd></div>
+        <div><dt>공간</dt><dd>평면 화면입니다. 팔찌 옆 ✥ 화살표를 끌면 팔찌를 옮길 수 있고(놓으면 가장 가까운 격자 교차점에 붙음), TRANSLATION RULES를 누르면 번역 규칙이 펼쳐집니다. 격자는 기본적으로 꺼져 있고 GRID ON으로 켤 수 있습니다.</dd></div>
+        <div><dt>떠다니기</dt><dd>팔찌마다 다른 방향으로 1~2분 주기로 느리게 왕복합니다. 호버한 팔찌는 멈춥니다. FLOAT OFF로 끌 수 있습니다.</dd></div>
+        <div><dt>터치</dt><dd>팔찌 위에서 드래그하면 영상, 빈 공간에서 드래그하면 시점이 움직입니다.</dd></div>
+        <div id="keyboard-help"><dt>키보드</dt><dd>[ ]: 팔찌 선택 / 화살표: 선택한 팔찌를 격자 한 칸 이동 / Space: 영상 이동 / Shift+Space: 반대 방향 / Esc: 선택 해제 / R: 처음 자리.</dd></div>
+      </dl>
+      <p class="help-note">실제 3D 팔찌 모델이 아닌, 3D 좌표에 놓인 영상 프레임입니다. 호버 판정을 위해 영상 픽셀을 읽으므로 로컬 서버(serve.py) 또는 ‘영상 불러오기’로 MP4를 읽는 편이 정확합니다.</p>
+    </section>
+
+    <input id="video-file" class="sr-only" type="file" accept="video/mp4,video/webm,video/quicktime,video/*" tabindex="-1" aria-label="팔찌 회전 영상 선택">
+    <div id="video-bank" class="video-bank" aria-hidden="true"></div>
+    <p id="announcement" class="sr-only" aria-live="polite"></p>
+    <noscript><div class="noscript">JavaScript를 켜주세요.</div></noscript>
+  </main>
+</body>
+</html>
