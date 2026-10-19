@@ -22,7 +22,8 @@
     { id: "bracelet-02", name: "BRACELET 02", video: "assets/bracelet2.mp4",
       labels: [
         { text: "Decision to Leave (2022)", style: "title" },
-        { text: "Jang Hae-joon ↔ Song Seo-rae", style: "pair" }
+        { text: "Jang Hae-joon ↔ Song Seo-rae", style: "pair" },
+        { text: "KNOTATION", style: "paper", u: 0.5, v: 0.22, align: "center" }
       ],
       handle: { u: 0.17, v: 0.24 },
       // 호버하면 이미지가 뜨는 지점. 매듭은 영상 시간에 따라 자리가 바뀌므로 [초, u, v]로 경로를 적고, 사이는 보간합니다.
@@ -139,7 +140,8 @@
     input: $("video-file"), help: $("help-panel"), helpButton: $("help-button"),
     announcement: $("announcement"), floatButton: $("float-toggle"), gridButton: $("grid-toggle"),
     overlay: $("overlay"), rules: $("rules"), rulesToggle: $("rules-toggle"), rulesBody: $("rules-body"), rulesHandle: $("rules-handle"),
-    mark: $("mark")
+    mark: $("mark"), paperViewer: $("paper-viewer"), paperSheet: $("paper-sheet"),
+    paperMessage: $("paper-message"), paperStatus: $("paper-status")
   };
   const ctx = ui.canvas.getContext("2d", { alpha: false });
   if (!ctx) {
@@ -716,9 +718,21 @@
       const parts = [];
       const placed = [];
       for (const spec of labels) {
-        const el = document.createElement("div");
-        el.className = `item__label item__label--${spec.style === "pair" ? "pair" : "title"}${spec.align === "right" ? " is-right" : ""}`;
+        const isPaper = spec.style === "paper";
+        const el = document.createElement(isPaper ? "button" : "div");
+        el.className = `item__label item__label--${isPaper ? "paper" : spec.style === "pair" ? "pair" : "title"}${spec.align === "right" ? " is-right" : ""}`;
         el.textContent = spec.text;
+        if (isPaper) {
+          el.type = "button";
+          el.setAttribute("aria-label", "KNOTATION 종이 펼치기");
+          el.setAttribute("aria-haspopup", "dialog");
+          el.setAttribute("aria-controls", "paper-viewer");
+          el.setAttribute("aria-expanded", "false");
+          el.addEventListener("click", () => openPaper(el));
+          el.addEventListener("pointerenter", () => { setHovered(node); preloadPaper(); });
+          el.addEventListener("pointerleave", () => setHovered(null));
+          el.addEventListener("focus", preloadPaper);
+        }
         el.style.fontSize = `${spec.style === "pair" ? CONFIG.labelPairSize : CONFIG.labelTitleSize}px`;
         // u/v가 없으면 팔찌 위 영역에서 무작위로 고르되, 먼저 놓인 레이블과 세로로 겹치지 않게 합니다.
         let u = spec.u, v = spec.v;
@@ -731,7 +745,7 @@
           }
         }
         placed.push({ u, v });
-        group.appendChild(el); parts.push({ el, u, v, right: spec.align === "right" });
+        group.appendChild(el); parts.push({ el, u, v, right: spec.align === "right", center: spec.align === "center" });
       }
       const hotspots = [];
       for (const spec of (asset.hotspots || [])) {
@@ -995,7 +1009,7 @@
   }
 
   function updateSurfaceMotion(dt) {
-    const floating = floatingAllowed() && !drag && ui.help.hidden;
+    const floating = floatingAllowed() && !drag && ui.help.hidden && !ui.paperViewer?.open;
     for (const node of nodes) {
       // 호버한 팔찌는 커서 아래에서 도망가지 않도록 드리프트와 부유를 모두 멈춥니다.
       if (floating && node !== hovered && sceneDetail?.node !== node && !node.held && (node.frame || node.source.frame)) {
@@ -1325,6 +1339,138 @@
     source.load(source.objectURL);
     ui.announcement.textContent = `${file.name}을 이 브라우저에서만 미리 봅니다. 파일을 서버로 보내지 않습니다.`;
     ui.input.value = "";
+  });
+
+  // KNOTATION 종이: 원본 PNG 네 장을 순서대로 펼치고, 투명한 여백도 바깥 클릭으로 처리합니다.
+  const PAPER_STEPS = [1, 2, 3, 4].map(step => `assets/DecisiontoLeave_JHJSSR_Knotation${step}.png`);
+  const paperCache = new Map();
+  const paper = { step: -1, busy: false, session: 0, trigger: null, asset: null, animations: [] };
+  function loadPaper(step) {
+    if (paperCache.has(step)) return paperCache.get(step);
+    const loading = (async () => {
+      const image = new Image();
+      image.src = PAPER_STEPS[step];
+      await image.decode();
+      // 작은 알파 마스크로 종이 모양 안/밖을 판별합니다. 원본 이미지에는 손대지 않습니다.
+      let mask = null;
+      try {
+        const canvas = document.createElement("canvas"); canvas.width = canvas.height = 256;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.drawImage(image, 0, 0, 256, 256);
+        mask = context.getImageData(0, 0, 256, 256).data;
+      } catch { /* file://의 픽셀 접근 제한에서는 이미지 사각형을 사용합니다. */ }
+      return { image, mask };
+    })().catch(error => { paperCache.delete(step); throw error; });
+    paperCache.set(step, loading);
+    return loading;
+  }
+  function preloadPaper() {
+    PAPER_STEPS.forEach((_, step) => { loadPaper(step).catch(() => {}); });
+  }
+  function paperImage(asset) {
+    const image = asset.image.cloneNode();
+    image.className = "paper-viewer__image"; image.alt = ""; image.draggable = false;
+    return image;
+  }
+  async function showPaperStep(step) {
+    if (!ui.paperViewer.open || paper.busy || step >= PAPER_STEPS.length) return;
+    const session = paper.session;
+    paper.busy = true;
+    ui.paperSheet.setAttribute("aria-busy", "true");
+    ui.paperSheet.setAttribute("aria-disabled", "true");
+    ui.paperMessage.textContent = paper.step < 0 ? "종이를 불러오는 중입니다." : "";
+    try {
+      const asset = await loadPaper(step);
+      if (session !== paper.session || !ui.paperViewer.open) return;
+      const previous = ui.paperSheet.firstElementChild;
+      const frame = document.createElement("span"); frame.className = "paper-viewer__frame";
+      frame.setAttribute("aria-hidden", "true");
+      paper.step = step; paper.asset = asset;
+      ui.paperViewer.dataset.step = String(step + 1);
+      ui.paperMessage.textContent = "";
+      ui.paperSheet.hidden = false;
+      ui.paperSheet.appendChild(frame);
+      const animate = (element, keyframes, duration) => {
+        const animation = element.animate(keyframes, { duration, easing: "cubic-bezier(.22,.61,.36,1)", fill: "both" });
+        paper.animations.push(animation);
+        return animation.finished.catch(() => {});
+      };
+      const motions = [];
+      if (reducedMotion.matches) {
+        frame.appendChild(paperImage(asset));
+      } else if (!previous) {
+        frame.appendChild(paperImage(asset));
+        motions.push(animate(frame, [{ opacity: 0, transform: "scale(.94)" }, { opacity: 1, transform: "scale(1)" }], 300));
+      } else {
+        // 가운데 원은 고정하고 네 바깥 면을 각 접힘선에서 펼칩니다.
+        const faces = [
+          ["polygon(35% 35%,65% 35%,65% 65%,35% 65%)", "50% 50%", "none"],
+          ["polygon(0 0,100% 0,65% 35%,35% 35%)", "50% 35%", "rotateX(48deg)"],
+          ["polygon(100% 0,100% 100%,65% 65%,65% 35%)", "65% 50%", "rotateY(48deg)"],
+          ["polygon(100% 100%,0 100%,35% 65%,65% 65%)", "50% 65%", "rotateX(-48deg)"],
+          ["polygon(0 100%,0 0,35% 35%,35% 65%)", "35% 50%", "rotateY(-48deg)"]
+        ];
+        faces.forEach(([clip, origin, fold], index) => {
+          const face = paperImage(asset);
+          face.style.clipPath = clip; face.style.transformOrigin = origin; frame.appendChild(face);
+          motions.push(animate(face, [
+            { opacity: index ? .15 : 0, transform: fold, filter: index ? "brightness(.72)" : "brightness(1)" },
+            { opacity: 1, transform: "none", filter: "brightness(1)" }
+          ], 760));
+        });
+        motions.push(animate(previous, [{ opacity: 1 }, { opacity: 0 }], 500));
+      }
+      ui.paperSheet.setAttribute("aria-label", step === 3 ? "KNOTATION 종이, 4단계 모두 펼쳐짐" : `KNOTATION 종이 ${step + 1}/4단계. 클릭하면 ${step + 2}단계로 펼치기`);
+      if (!previous) ui.paperSheet.focus({ preventScroll: true });
+      await Promise.all(motions);
+      if (session !== paper.session || !ui.paperViewer.open) return;
+      previous?.remove();
+      // 정지 상태는 한 장의 원본으로 표시하여 접합선이나 중복 이미지를 남기지 않습니다.
+      frame.replaceChildren(paperImage(asset));
+      paper.animations.forEach(animation => animation.cancel()); paper.animations = [];
+      paper.busy = false;
+      ui.paperSheet.setAttribute("aria-busy", "false");
+      ui.paperSheet.setAttribute("aria-disabled", String(step === 3));
+      ui.paperStatus.textContent = step === 3 ? "종이가 모두 펼쳐졌습니다. 바깥을 누르면 닫힙니다." : `종이 ${step + 1}/4단계. 종이를 누르면 다음 단계로 펼쳐집니다.`;
+    } catch {
+      if (session !== paper.session || !ui.paperViewer.open) return;
+      paper.busy = false;
+      ui.paperSheet.setAttribute("aria-busy", "false");
+      ui.paperSheet.setAttribute("aria-disabled", "false");
+      ui.paperMessage.textContent = "종이를 불러오지 못했습니다. 바깥을 눌러 닫은 뒤 다시 열어주세요.";
+    }
+  }
+  function openPaper(trigger) {
+    if (!ui.paperViewer || ui.paperViewer.open) return;
+    closeScene(); setHovered(null);
+    paper.session++; paper.step = -1; paper.busy = false; paper.trigger = trigger;
+    trigger.setAttribute("aria-expanded", "true");
+    ui.paperViewer.showModal();
+    preloadPaper(); showPaperStep(0); requestRender();
+  }
+  function onPaper(x, y) {
+    if (!paper.asset || ui.paperSheet.hidden) return false;
+    const rect = ui.paperSheet.getBoundingClientRect();
+    const u = (x - rect.left) / rect.width, v = (y - rect.top) / rect.height;
+    if (u < 0 || u >= 1 || v < 0 || v >= 1) return false;
+    return !paper.asset.mask || paper.asset.mask[(Math.floor(v * 256) * 256 + Math.floor(u * 256)) * 4 + 3] > 20;
+  }
+  ui.paperViewer?.addEventListener("click", event => {
+    const keyboard = event.detail === 0 && event.target === ui.paperSheet;
+    if (!keyboard && !onPaper(event.clientX, event.clientY)) { ui.paperViewer.close(); return; }
+    showPaperStep(paper.step + 1);
+  });
+  ui.paperViewer?.addEventListener("keydown", event => event.stopPropagation());
+  ui.paperViewer?.addEventListener("close", () => {
+    paper.session++;
+    paper.animations.forEach(animation => animation.cancel()); paper.animations = [];
+    paper.busy = false; paper.asset = null;
+    ui.paperSheet.replaceChildren(); ui.paperSheet.hidden = true;
+    ui.paperMessage.textContent = ""; ui.paperStatus.textContent = "";
+    delete ui.paperViewer.dataset.step;
+    paper.trigger?.setAttribute("aria-expanded", "false");
+    paper.trigger?.focus({ preventScroll: true }); paper.trigger = null;
+    requestRender();
   });
 
   // EDIT 10 — KNOTATION. 글자마다 흰 네모(글자는 오른쪽 아래), 글자 하나씩 따로 끌 수 있고 전체는 아주 느리게 흘러갑니다.
