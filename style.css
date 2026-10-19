@@ -153,3 +153,23 @@ canvas:focus-visible { outline: 1px solid rgba(154,160,166,.35); outline-offset:
 .scene-detail__copy p { margin: 0; }
 .scene-detail:focus { outline: none; }
 @media (prefers-reduced-motion: reduce) { .scene-detail { transition: none; } }
+
+/* KNOTATION — 장면 이미지가 있는 팔찌의 흰 제목 상자와 중앙 종이. */
+.item__label--paper { padding: 3px 7px 2px; border: 0; border-radius: 0; background: #fff; color: #000;
+  font: 400 12px/1.4 "TT Marxiana Antiqua", "Times New Roman", serif; letter-spacing: -0.035em;
+  -webkit-text-stroke: 0; text-shadow: none; pointer-events: auto; touch-action: manipulation; }
+.item__label--paper:focus-visible { outline: 1px solid #fff; outline-offset: 3px; }
+.paper-viewer { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0; background: transparent; color: #fff; overflow: hidden; overscroll-behavior: contain; }
+.paper-viewer[open] { display: grid; place-items: center; }
+.paper-viewer::backdrop { background: rgba(0, 0, 0, .46); }
+.paper-viewer__sheet { position: relative; display: block; width: min(860px, calc(100vw - 32px), calc(100dvh - 48px));
+  aspect-ratio: 1; padding: 0; border: 0; border-radius: 0; background: transparent;
+  perspective: 1400px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.paper-viewer__sheet:focus-visible { outline: 1px dashed rgba(255,255,255,.55); outline-offset: 4px; }
+.paper-viewer__sheet[aria-disabled="true"] { cursor: default; }
+.paper-viewer__frame, .paper-viewer__image { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.paper-viewer__frame { perspective: 1400px; }
+.paper-viewer__image { display: block; object-fit: contain; backface-visibility: hidden; }
+.paper-viewer__message { position: absolute; top: 50%; left: 24px; right: 24px; margin: 0; transform: translateY(-50%);
+  text-align: center; font: 400 12px/1.7 "Chosun Shinmyungjo", serif; pointer-events: none; }
