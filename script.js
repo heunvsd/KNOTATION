@@ -643,11 +643,11 @@
     return { x: cx + Math.round((x - cx) / g) * g, y: cy + Math.round((y - cy) / g) * g };
   }
 
-  // Scene detail grows in layout space: its paragraph reflows throughout the unfold.
+  // Scene 1 원본은 정사각형 안에 삼각 종이가 놓여 있습니다.
   let sceneDetail = null;
   function sceneBounds() {
-    const w = Math.max(1, Math.min(600, window.innerWidth - 24, (window.innerHeight - 48) * 16 / 9));
-    return { w, h: w * 9 / 16 };
+    const w = Math.max(1, Math.min(600, window.innerWidth - 24, window.innerHeight - 48));
+    return { w, h: w };
   }
   function placeScene(detail) {
     const { w, h } = sceneBounds();
@@ -655,10 +655,21 @@
     const y = clamp(detail.origin.top + detail.origin.height / 2 - h / 2, 24, Math.max(24, window.innerHeight - h - 24));
     Object.assign(detail.el.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
   }
+  function layoutSceneCopy(detail) {
+    const { copy, measure } = detail;
+    const indent = copy.clientWidth * .74;
+    measure.style.width = `${Math.max(1, copy.clientWidth - indent)}px`;
+    copy.style.setProperty("--scene-indent", `${indent}px`);
+    copy.style.setProperty("--scene-view-height", `${copy.clientHeight}px`);
+    // 가장 좁은 글줄의 전체 높이를 사용해 스크롤 범위를 일정하게 유지합니다.
+    copy.style.setProperty("--scene-flow-height", `${Math.max(copy.clientHeight, measure.scrollHeight)}px`);
+    copy.style.setProperty("--scene-scroll", `${copy.scrollTop}px`);
+  }
   function closeScene() {
     const detail = sceneDetail;
     if (!detail || detail.closing) return;
     detail.closing = true;
+    detail.copyObserver.disconnect();
     detail.hs.el.setAttribute("aria-expanded", "false");
     detail.el.classList.remove("is-open");
     detail.el.inert = true;
@@ -679,21 +690,33 @@
     el.id = "scene-detail"; el.className = "scene-detail";
     el.setAttribute("role", "region"); el.setAttribute("aria-label", "Scene 1 — 이포에서의 재회");
     const art = document.createElement("img");
-    art.className = "scene-detail__image"; art.src = hs.spec.detailImage; art.alt = "해준과 서래";
+    art.className = "scene-detail__image"; art.src = hs.spec.detailImage; art.alt = "관계 기호가 그려진 삼각 종이";
     art.draggable = false;
     const copy = document.createElement("div"); copy.className = "scene-detail__copy";
+    copy.tabIndex = 0; copy.setAttribute("role", "region");
+    copy.setAttribute("aria-label", "이포에서의 재회 — 스크롤하여 본문 읽기");
     const paragraph = document.createElement("p"); paragraph.textContent = hs.spec.text;
     copy.appendChild(paragraph); italicizeLatin(copy);
+    const measure = paragraph.cloneNode(true); measure.className = "scene-detail__measure";
+    measure.setAttribute("aria-hidden", "true"); copy.appendChild(measure);
+    copy.addEventListener("scroll", () => {
+      // 제외 영역을 화면에 고정해, 아래의 긴 글줄도 위로 올리면 다시 좁게 조판합니다.
+      copy.style.setProperty("--scene-scroll", `${copy.scrollTop}px`);
+    }, { passive: true });
     el.tabIndex = -1;
     el.append(art, copy);
     const origin = hs.el.getBoundingClientRect();
     Object.assign(el.style, { left: `${origin.left}px`, top: `${origin.top}px`, width: `${origin.width}px`, height: `${origin.height}px` });
     document.getElementById("space").appendChild(el);
-    sceneDetail = { el, hs, node, origin, closing: false };
+    const detail = { el, hs, node, origin, copy, measure, closing: false, copyObserver: null };
+    detail.copyObserver = new ResizeObserver(() => layoutSceneCopy(detail));
+    detail.copyObserver.observe(copy);
+    sceneDetail = detail;
+    document.fonts.ready.then(() => { if (!detail.closing) layoutSceneCopy(detail); });
     hs.el.setAttribute("aria-controls", el.id); hs.el.setAttribute("aria-expanded", "true");
     void el.offsetWidth;
-    el.classList.add("is-open"); placeScene(sceneDetail);
-    el.focus({ preventScroll: true }); requestRender();
+    el.classList.add("is-open"); placeScene(detail); layoutSceneCopy(detail);
+    copy.focus({ preventScroll: true }); requestRender();
   }
   // Capture outside clicks before they can reopen a knot or activate another control.
   document.addEventListener("click", event => {
