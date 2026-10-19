@@ -8,8 +8,8 @@
   <meta name="description" content="검정 공간에서 팔찌 영상이 느리게 떠다닙니다. 원본 컬러 영상, 레이블, 번역 규칙, 휠 왕복 탐색.">
   <title>Bracelet — Black / Space</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=scene-hotspots-6">
-  <script defer src="script.js?v=scene-hotspots-6"></script>
+  <link rel="stylesheet" href="style.css?v=knotation-paper-1">
+  <script defer src="script.js?v=knotation-paper-1"></script>
 </head>
 <body>
   <main id="space" aria-label="팔찌 영상 공간">
@@ -112,5 +112,11 @@
     <p id="announcement" class="sr-only" aria-live="polite"></p>
     <noscript><div class="noscript">JavaScript를 켜주세요.</div></noscript>
   </main>
+  <dialog id="paper-viewer" class="paper-viewer" aria-label="KNOTATION 종이 펼치기" aria-describedby="paper-help">
+    <button id="paper-sheet" class="paper-viewer__sheet" type="button" aria-label="종이 펼치기" hidden></button>
+    <p id="paper-message" class="paper-viewer__message" role="status"></p>
+    <p id="paper-help" class="sr-only">종이를 클릭하거나 Enter 또는 Space를 누르면 네 단계로 펼쳐집니다. 종이 바깥을 클릭하거나 Escape를 누르면 닫힙니다.</p>
+    <p id="paper-status" class="sr-only" aria-live="polite"></p>
+  </dialog>
 </body>
 </html>
