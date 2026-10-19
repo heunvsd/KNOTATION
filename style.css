@@ -147,15 +147,16 @@ canvas:focus-visible { outline: 1px solid rgba(154,160,166,.35); outline-offset:
   opacity: 0; isolation: isolate; }
 .scene-detail.is-open { opacity: 1; }
 .scene-detail__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.scene-detail__copy { position: absolute; left: 33%; width: 57%; top: 29%; height: 27%;
-  --scene-indent: 74%; --scene-scroll: 0px; --scene-view-height: 100%; --scene-flow-height: 100%;
-  overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.scene-detail__copy { position: absolute; left: 8%; width: 83%; top: 25%; height: 56%;
+  --scene-indent: 90%; --scene-scroll: 0px; --scene-taper-height: 90%; --scene-flow-height: 100%;
+  overflow: hidden; scrollbar-width: none; overscroll-behavior: contain; }
+.scene-detail__copy.is-scrollable { overflow-y: auto; }
 .scene-detail__copy::before { content: ""; float: left; width: 100%; height: var(--scene-flow-height);
   shape-outside: polygon(0 0, var(--scene-indent) 0, var(--scene-indent) var(--scene-scroll),
-    0 calc(var(--scene-scroll) + var(--scene-view-height)), 0 100%); }
+    0 calc(var(--scene-scroll) + var(--scene-taper-height)), 0 100%); }
 .scene-detail__copy::-webkit-scrollbar { display: none; }
 .scene-detail__copy p { margin: 0; width: auto; transform: none; overflow-wrap: anywhere; }
-.scene-detail__copy .scene-detail__measure { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; }
+.scene-detail__measure { visibility: hidden; pointer-events: none; overflow: visible; }
 .scene-detail__copy:focus { outline: none; }
 .scene-detail:focus { outline: none; }
 @media (prefers-reduced-motion: reduce) { .scene-detail { transition: none; } }
